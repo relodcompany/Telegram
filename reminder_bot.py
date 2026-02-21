@@ -1,15 +1,10 @@
 import re
 import datetime
-from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
-import re
-import datetime
 from zoneinfo import ZoneInfo
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 # Replace with your actual Bot Token
-BOT_TOKEN = "8514134989:AAEFpZHK_MGNHx5P8H1INDb186iglSbZeas"
 BOT_TOKEN = "8514134989:AAEFpZHK_MGNHx5P8H1INDb186iglSbZeas"
 BOT_TIMEZONE = ZoneInfo("Europe/Moscow")
 
@@ -24,7 +19,6 @@ def parse_time_input(time_str: str):
     Returns a tuple: (target_datetime, is_yearly_boolean)
     """
     time_str = time_str.lower().strip()
-    now = datetime.datetime.now()
     now = datetime.datetime.now(BOT_TIMEZONE)
     
     # Check if this is a recurring yearly reminder
@@ -77,12 +71,6 @@ async def set_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             await update.message.reply_text(f"❌ Sorry, I couldn't understand the time: '{time_str}'.")
             return
         
-        now = datetime.datetime.now()
-        delay_seconds = (parsed_time - now).total_seconds()
-
-        if delay_seconds <= 0:
-            await update.message.reply_text("⏳ That time is in the past! Please provide a future time.")
-            return
         now = datetime.datetime.now(BOT_TIMEZONE)
 
         if parsed_time <= now:
@@ -101,14 +89,6 @@ async def set_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             return
 
         # Schedule the task
-        context.job_queue.run_once(␍␊
-            send_reminder,␍␊
-            when=delay_seconds,
-            chat_id=update.effective_chat.id,␍␊
-            data=job_data␍␊
-        )␍␊
-␍␊
-        formatted_time = parsed_time.strftime('%B %d, %Y at %H:%M')
         context.job_queue.run_once(␊
             send_reminder,␊
             when=parsed_time,
@@ -153,8 +133,6 @@ async def send_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
             # Failsafe for Leap Years (Feb 29)
             next_time = old_time + datetime.timedelta(days=365)
             
-        now = datetime.datetime.now()
-        delay_seconds = (next_time - now).total_seconds()
         now = datetime.datetime.now(BOT_TIMEZONE)
         if next_time <= now:
             next_time = now + datetime.timedelta(days=365)
@@ -163,12 +141,6 @@ async def send_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
         job_data['target_time'] = next_time
         
         # Put it back in the queue for next year
-        context.job_queue.run_once(␍␊
-            send_reminder,␍␊
-            when=delay_seconds,
-            chat_id=job.chat_id,␍␊
-            data=job_data␍␊
-        )␍␊
         context.job_queue.run_once(␊
             send_reminder,␊
             when=next_time,
@@ -178,7 +150,6 @@ async def send_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
 
 def main() -> None:
     """Start the bot."""
-    app = Application.builder().token(BOT_TOKEN).build()
     app = Application.builder().token(BOT_TOKEN).timezone(BOT_TIMEZONE).build()
 
     app.add_handler(CommandHandler("start", start))
@@ -189,3 +160,4 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
+
