@@ -128,52 +128,64 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(welcome_text, parse_mode='Markdown')
 
 async def set_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Parse the user's input and schedule a reminder."""
-    user_input = update.message.text.replace('/remind', '', 1).strip()
-    
-    if ';' not in user_input:
-        await update.message.reply_text("❌ Invalid format. Use: `/remind <time> ; <message>`", parse_mode='Markdown')
-        return
-    
-    time_str, message_str = user_input.split(';', 1)
-    
-    # Use our custom built-in parser, which now returns two items
-    result = parse_time_input(time_str)
-    parsed_time, is_yearly = result
-    
-    if not parsed_time:
-        await update.message.reply_text(f"❌ Sorry, I couldn't understand the time: '{time_str}'.")
-        return
-    
-    now = datetime.datetime.now()
-    delay_seconds = (parsed_time - now).total_seconds()
+    """Parse the user's input and schedule a reminder with error catching."""
+    try:
+        user_input = update.message.text.replace('/remind', '', 1).strip()
+        
+        if ';' not in user_input:
+            await update.message.reply_text("❌ Invalid format. Use: `/remind <time> ; <message>`", parse_mode='Markdown')
+            return
+        
+        time_str, message_str = user_input.split(';', 1)
+        
+        # Use our custom built-in parser
+        result = parse_time_input(time_str)
+        parsed_time, is_yearly = result
+        
+        if not parsed_time:
+            await update.message.reply_text(f"❌ Sorry, I couldn't understand the time: '{time_str}'.")
+            return
+        
+        now = datetime.datetime.now()
+        delay_seconds = (parsed_time - now).total_seconds()
 
-    if delay_seconds <= 0:
-        await update.message.reply_text("⏳ That time is in the past! Please provide a future time.")
-        return
+        if delay_seconds <= 0:
+            await update.message.reply_text("⏳ That time is in the past! Please provide a future time.")
+            return
 
-    # Package the data so the bot remembers if it needs to repeat next year
-    job_data = {
-        'message': message_str.strip(),
-        'is_yearly': is_yearly,
-        'target_time': parsed_time
-    }
+        job_data = {
+            'message': message_str.strip(),
+            'is_yearly': is_yearly,
+            'target_time': parsed_time
+        }
 
-    # Schedule the task
-    context.job_queue.run_once(
-        send_reminder,
-        when=delay_seconds,
-        chat_id=update.effective_chat.id,
-        data=job_data
-    )
+        # Check if the job_queue is actually loaded
+        if context.job_queue is None:
+            await update.message.reply_text("🚨 **SYSTEM ERROR:** The JobQueue failed to load. APScheduler might not be installed correctly on Bothost.", parse_mode='Markdown')
+            return
 
-    formatted_time = parsed_time.strftime('%B %d, %Y at %H:%M')
-    recurrence_text = "🔁 **(Repeats Every Year)**" if is_yearly else ""
-    
-    await update.message.reply_text(
-        f"✅ Got it! I will remind you to:\n\n**{message_str.strip()}**\n\n🕒 At: {formatted_time}\n{recurrence_text}", 
-        parse_mode='Markdown'
-    )
+        # Schedule the task
+        context.job_queue.run_once(
+            send_reminder,
+            when=delay_seconds,
+            chat_id=update.effective_chat.id,
+            data=job_data
+        )
+
+        formatted_time = parsed_time.strftime('%B %d, %Y at %H:%M')
+        recurrence_text = "🔁 **(Repeats Every Year)**" if is_yearly else ""
+        
+        await update.message.reply_text(
+            f"✅ Got it! I will remind you to:\n\n**{message_str.strip()}**\n\n🕒 At: {formatted_time}\n{recurrence_text}", 
+            parse_mode='Markdown'
+        )
+
+    except Exception as e:
+        # IF ANYTHING BREAKS, SEND THE ERROR TO TELEGRAM!
+        import traceback
+        error_msg = traceback.format_exc()
+        await update.message.reply_text(f"⚠️ **CRASH DETECTED:**\n\n```python\n{error_msg[-800:]}\n```", parse_mode='Markdown')
+        print(error_msg)
 
 async def send_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
     """Triggered by JobQueue when the timer goes off."""
@@ -223,6 +235,7 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
+
 
 
 
