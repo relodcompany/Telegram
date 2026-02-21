@@ -4,7 +4,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 # Replace with your actual Bot Token
-BOT_TOKEN = "8514134989:AAG5olQEVoAeqR1tZY-HRN4T_HLnQqiGjko"
+BOT_TOKEN = "8514134989:AAEFpZHK_MGNHx5P8H1INDb186iglSbZeas"
 
 def parse_time_input(time_str: str):
     """
@@ -223,5 +223,6 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
+
 
 
