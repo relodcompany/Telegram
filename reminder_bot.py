@@ -4,9 +4,9 @@ import re
 from zoneinfo import ZoneInfo
 
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, ContextTypes, Defaults
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8514134989:AAEFpZHK_MGNHx5P8H1INDb186iglSbZeas")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 BOT_TIMEZONE = ZoneInfo("Europe/Moscow")
 
 
@@ -267,7 +267,7 @@ def main() -> None:
     if not BOT_TOKEN:
         raise RuntimeError("BOT_TOKEN environment variable is required")
 
-    app = Application.builder().token(BOT_TOKEN).timezone(BOT_TIMEZONE).build()
+    app = Application.builder().token(BOT_TOKEN).defaults(Defaults(tzinfo=BOT_TIMEZONE)).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("remind", set_reminder))
 
