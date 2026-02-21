@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, Defaults
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8514134989:AAHbGrnlvKXNFIsVKzKAXs794GNF0HZj9Fo")
 BOT_TIMEZONE = ZoneInfo("Europe/Moscow")
 
 
@@ -277,3 +277,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
